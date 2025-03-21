@@ -279,197 +279,293 @@
 
 
 
+# import streamlit as st
+# import qrcode
+# from PIL import Image, ImageDraw
+# import io
+# import numpy as np
+# import svgwrite
+# from pyzbar.pyzbar import decode
+# import pandas as pd
+# import zipfile
+# from reportlab.lib.pagesizes import letter
+# from reportlab.pdfgen import canvas
+# from reportlab.lib.utils import ImageReader
+# import tempfile
+
+# # ======================
+
+# def generate_advanced_qr(data, fill_color, back_color, size, ec, logo=None, shape="square", gradient=False):
+#     """Generate a customized QR code."""
+#     qr = qrcode.QRCode(
+#         version=1,
+#         error_correction=ec,
+#         box_size=10,
+#         border=1
+#     )
+#     qr.add_data(data)
+#     qr.make(fit=True)
+    
+#     # Create Image object for QR code
+#     img = qr.make_image(fill=fill_color, back_color=back_color)
+    
+#     if logo:
+#         logo_img = Image.open(logo)
+#         # Optional: place logo in the center
+#         logo_size = int(img.size[0] / 4)  # Set logo size (1/4th of QR)
+#         logo_img.thumbnail((logo_size, logo_size))
+#         logo_pos = ((img.size[0] - logo_img.size[0]) // 2, (img.size[1] - logo_img.size[1]) // 2)
+#         img.paste(logo_img, logo_pos, logo_img.convert('RGBA'))
+    
+#     if gradient:
+#         img = apply_gradient(img, "radial", fill_color, back_color)
+    
+#     return img
+
+# # ======================
+
+# def generate_wifi_qr(ssid, password, encryption):
+#     """Generate WiFi QR Code"""
+#     if encryption == "nopass":
+#         data = f"WIFI:T:;S:{ssid};;"
+#     else:
+#         data = f"WIFI:T:{encryption};S:{ssid};P:{password};;"
+#     return generate_advanced_qr(data, "#000000", "#FFFFFF", 300, qrcode.ERROR_CORRECT_M)
+
+# # ======================
+
+# def generate_vcard(name, phone, email):
+#     """Generate vCard QR Code"""
+#     vcard_data = f"BEGIN:VCARD\nVERSION:3.0\nFN:{name}\nTEL:{phone}\nEMAIL:{email}\nEND:VCARD"
+#     return generate_advanced_qr(vcard_data, "#000000", "#FFFFFF", 300, qrcode.ERROR_CORRECT_M)
+
+# # ======================
+
+# def process_bulk_qr(csv_file):
+#     """Generate multiple QR codes from CSV data"""
+#     df = pd.read_csv(csv_file)
+#     if 'data' not in df.columns:
+#         raise ValueError("CSV must contain 'data' column")
+    
+#     zip_buffer = io.BytesIO()
+#     with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED) as zip_file:
+#         for index, row in df.iterrows():
+#             qr_img = generate_advanced_qr(
+#                 row['data'], 
+#                 row.get('color', '#000000'),
+#                 row.get('bg_color', '#FFFFFF'),
+#                 300,
+#                 qrcode.ERROR_CORRECT_M,
+#                 None,
+#                 'square'
+#             )
+#             img_buffer = io.BytesIO()
+#             qr_img.save(img_buffer, format='PNG')
+#             zip_file.writestr(f'qr_{index}.png', img_buffer.getvalue())
+    
+#     zip_buffer.seek(0)
+#     return zip_buffer
+
+# # ======================
+
+# def main():
+#     st.set_page_config(page_title="Super QR Pro", layout="wide")
+    
+#     # Sidebar Controls
+#     with st.sidebar:
+#         st.header("Advanced Settings")
+#         content_type = st.selectbox(
+#             "Content Type",
+#             ["URL", "WiFi", "vCard", "Text", "Bulk"]
+#         )
+        
+#         # Error Correction
+#         error_correction = st.selectbox(
+#             "Error Correction Level",
+#             ["L (7%)", "M (15%)", "Q (25%)", "H (30%)"],
+#             index=1
+#         )
+#         ec_map = {
+#             "L": qrcode.ERROR_CORRECT_L,
+#             "M": qrcode.ERROR_CORRECT_M,
+#             "Q": qrcode.ERROR_CORRECT_Q,
+#             "H": qrcode.ERROR_CORRECT_H
+#         }
+#         ec = ec_map[error_correction[0]]
+        
+#         # Advanced Features
+#         gradient = st.checkbox("Gradient Effect")
+#         shape = st.selectbox("QR Shape", ["square", "circle", "rounded"])
+#         logo = st.file_uploader("Center Logo (PNG)", type=["png"])
+        
+#         # Bulk Processing
+#         if content_type == "Bulk":
+#             bulk_csv = st.file_uploader("Bulk CSV", type=["csv"])
+#         else:
+#             bulk_csv = None
+
+#     # Main Interface
+#     col1, col2 = st.columns([1, 2])
+    
+#     with col1:
+#         st.header("Configuration")
+        
+#         # Dynamic Content Input
+#         if content_type == "Bulk":
+#             st.info("Upload CSV with 'data' column and optional 'color', 'bg_color' columns")
+#         else:
+#             if content_type == "URL":
+#                 data = st.text_input("URL", "https://")
+#                 utm_source = st.text_input("UTM Source", "")
+#                 if utm_source:
+#                     data += f"?utm_source={utm_source}&utm_medium=qr"
+#             elif content_type == "WiFi":
+#                 ssid = st.text_input("SSID")
+#                 password = st.text_input("Password")
+#                 encryption = st.selectbox("Encryption", ["WPA", "WEP", "nopass"])
+#                 data = generate_wifi_qr(ssid, password, encryption)
+#             elif content_type == "vCard":
+#                 name = st.text_input("Full Name")
+#                 phone = st.text_input("Phone")
+#                 email = st.text_input("Email")
+#                 data = generate_vcard(name, phone, email)
+#             else:
+#                 data = st.text_area("Text Content")
+        
+#         # Style Customization
+#         if content_type != "Bulk":
+#             fill_color = st.color_picker("Primary Color", "#000000")
+#             back_color = st.color_picker("Background Color", "#FFFFFF")
+#             size = st.slider("QR Size (px)", 100, 1000, 300)
+#             real_time = st.checkbox("Real-time Preview", True)
+
+#     with col2:
+#         st.header("Output")
+        
+#         if content_type == "Bulk":
+#             if bulk_csv and st.button("Generate Bulk QRs"):
+#                 with st.spinner("Processing batch..."):
+#                     try:
+#                         zip_buffer = process_bulk_qr(bulk_csv)
+#                         st.success(f"Generated {len(pd.read_csv(bulk_csv))} QR codes")
+#                         st.download_button(
+#                             label="Download ZIP",
+#                             data=zip_buffer,
+#                             file_name="qr_batch.zip",
+#                             mime="application/zip"
+#                         )
+#                     except Exception as e:
+#                         st.error(f"Error: {str(e)}")
+#         else:
+#             if data and (real_time or st.button("Generate QR")):
+#                 with st.spinner("Generating advanced QR code..."):
+#                     try:
+#                         qr_img = generate_advanced_qr(
+#                             data, fill_color, back_color, size, ec,
+#                             logo, shape, gradient
+#                         )
+                        
+#                         # Preview
+#                         st.image(qr_img, use_column_width=True)
+                        
+#                         # Export Options
+#                         export_format = st.radio("Export Format", ["PNG", "SVG", "PDF"])
+
+
+# # Add other code handling to finish up as needed.
+
+
+
+
+
+
 import streamlit as st
 import qrcode
-from PIL import Image, ImageDraw
+from PIL import Image
 import io
-import numpy as np
-import svgwrite
-from pyzbar.pyzbar import decode
-import pandas as pd
-import zipfile
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-import tempfile
 
-# ======================
-
-def generate_advanced_qr(data, fill_color, back_color, size, ec, logo=None, shape="square", gradient=False):
-    """Generate a customized QR code."""
+# Function to generate QR code
+def generate_qr_code(data, version=1, box_size=10, border=5, logo=None):
     qr = qrcode.QRCode(
-        version=1,
-        error_correction=ec,
-        box_size=10,
-        border=1
+        version=version,  # Controls the size of the QR code
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=box_size,  # Controls the pixel size of each box
+        border=border,  # Controls the thickness of the border
     )
     qr.add_data(data)
     qr.make(fit=True)
-    
-    # Create Image object for QR code
-    img = qr.make_image(fill=fill_color, back_color=back_color)
-    
+
+    img = qr.make_image(fill='black', back_color='white')
+
     if logo:
-        logo_img = Image.open(logo)
-        # Optional: place logo in the center
-        logo_size = int(img.size[0] / 4)  # Set logo size (1/4th of QR)
-        logo_img.thumbnail((logo_size, logo_size))
-        logo_pos = ((img.size[0] - logo_img.size[0]) // 2, (img.size[1] - logo_img.size[1]) // 2)
-        img.paste(logo_img, logo_pos, logo_img.convert('RGBA'))
-    
-    if gradient:
-        img = apply_gradient(img, "radial", fill_color, back_color)
-    
+        # Add logo to the center
+        logo = Image.open(logo)
+        logo = logo.convert("RGBA")
+        img = img.convert("RGBA")
+        img.paste(logo, (int((img.width - logo.width) / 2), int((img.height - logo.height) / 2)), logo)
+
     return img
 
-# ======================
+# Streamlit app
+st.title("Powerful QR Code Generator")
 
-def generate_wifi_qr(ssid, password, encryption):
-    """Generate WiFi QR Code"""
-    if encryption == "nopass":
-        data = f"WIFI:T:;S:{ssid};;"
+st.markdown("""
+This is a powerful QR Code Generator that supports customizations such as logos, QR code size, and error correction levels. 
+You can also download your QR Code as an image.
+""")
+
+# User inputs
+data = st.text_input("Enter Data for QR Code:", "https://www.example.com")
+version = st.slider("QR Code Version (size):", min_value=1, max_value=40, value=1)
+box_size = st.slider("Box Size:", min_value=5, max_value=20, value=10)
+border = st.slider("Border Size:", min_value=1, max_value=10, value=5)
+
+logo = st.file_uploader("Upload Logo (optional)", type=["png", "jpg", "jpeg"])
+
+# Generate QR code
+if st.button("Generate QR Code"):
+    if data:
+        qr_image = generate_qr_code(data, version, box_size, border, logo)
+
+        # Show the QR code
+        st.image(qr_image, caption="Generated QR Code", use_column_width=True)
+
+        # Convert to bytes for download
+        buf = io.BytesIO()
+        qr_image.save(buf, format="PNG")
+        buf.seek(0)
+
+        st.download_button("Download QR Code", buf, file_name="qr_code.png", mime="image/png")
     else:
-        data = f"WIFI:T:{encryption};S:{ssid};P:{password};;"
-    return generate_advanced_qr(data, "#000000", "#FFFFFF", 300, qrcode.ERROR_CORRECT_M)
+        st.error("Please enter valid data for the QR code.")
 
-# ======================
+# Advanced options
+st.sidebar.header("Advanced Options")
+error_correction = st.sidebar.radio("Error Correction Level:", ("Low", "Medium", "High", "Very High"))
 
-def generate_vcard(name, phone, email):
-    """Generate vCard QR Code"""
-    vcard_data = f"BEGIN:VCARD\nVERSION:3.0\nFN:{name}\nTEL:{phone}\nEMAIL:{email}\nEND:VCARD"
-    return generate_advanced_qr(vcard_data, "#000000", "#FFFFFF", 300, qrcode.ERROR_CORRECT_M)
+error_correction_map = {
+    "Low": qrcode.constants.ERROR_CORRECT_L,
+    "Medium": qrcode.constants.ERROR_CORRECT_M,
+    "High": qrcode.constants.ERROR_CORRECT_Q,
+    "Very High": qrcode.constants.ERROR_CORRECT_H
+}
 
-# ======================
-
-def process_bulk_qr(csv_file):
-    """Generate multiple QR codes from CSV data"""
-    df = pd.read_csv(csv_file)
-    if 'data' not in df.columns:
-        raise ValueError("CSV must contain 'data' column")
-    
-    zip_buffer = io.BytesIO()
-    with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED) as zip_file:
-        for index, row in df.iterrows():
-            qr_img = generate_advanced_qr(
-                row['data'], 
-                row.get('color', '#000000'),
-                row.get('bg_color', '#FFFFFF'),
-                300,
-                qrcode.ERROR_CORRECT_M,
-                None,
-                'square'
-            )
-            img_buffer = io.BytesIO()
-            qr_img.save(img_buffer, format='PNG')
-            zip_file.writestr(f'qr_{index}.png', img_buffer.getvalue())
-    
-    zip_buffer.seek(0)
-    return zip_buffer
-
-# ======================
-
-def main():
-    st.set_page_config(page_title="Super QR Pro", layout="wide")
-    
-    # Sidebar Controls
-    with st.sidebar:
-        st.header("Advanced Settings")
-        content_type = st.selectbox(
-            "Content Type",
-            ["URL", "WiFi", "vCard", "Text", "Bulk"]
+# Change error correction based on selection
+if st.button("Generate with Custom Error Correction"):
+    if data:
+        qr = qrcode.QRCode(
+            version=version,
+            error_correction=error_correction_map[error_correction],
+            box_size=box_size,
+            border=border,
         )
+        qr.add_data(data)
+        qr.make(fit=True)
         
-        # Error Correction
-        error_correction = st.selectbox(
-            "Error Correction Level",
-            ["L (7%)", "M (15%)", "Q (25%)", "H (30%)"],
-            index=1
-        )
-        ec_map = {
-            "L": qrcode.ERROR_CORRECT_L,
-            "M": qrcode.ERROR_CORRECT_M,
-            "Q": qrcode.ERROR_CORRECT_Q,
-            "H": qrcode.ERROR_CORRECT_H
-        }
-        ec = ec_map[error_correction[0]]
+        img = qr.make_image(fill='black', back_color='white')
         
-        # Advanced Features
-        gradient = st.checkbox("Gradient Effect")
-        shape = st.selectbox("QR Shape", ["square", "circle", "rounded"])
-        logo = st.file_uploader("Center Logo (PNG)", type=["png"])
-        
-        # Bulk Processing
-        if content_type == "Bulk":
-            bulk_csv = st.file_uploader("Bulk CSV", type=["csv"])
-        else:
-            bulk_csv = None
+        # Show the QR code with custom error correction
+        st.image(img, caption="Generated QR Code with Custom Error Correction", use_column_width=True)
+    else:
+        st.error("Please enter valid data for the QR code.")
 
-    # Main Interface
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.header("Configuration")
-        
-        # Dynamic Content Input
-        if content_type == "Bulk":
-            st.info("Upload CSV with 'data' column and optional 'color', 'bg_color' columns")
-        else:
-            if content_type == "URL":
-                data = st.text_input("URL", "https://")
-                utm_source = st.text_input("UTM Source", "")
-                if utm_source:
-                    data += f"?utm_source={utm_source}&utm_medium=qr"
-            elif content_type == "WiFi":
-                ssid = st.text_input("SSID")
-                password = st.text_input("Password")
-                encryption = st.selectbox("Encryption", ["WPA", "WEP", "nopass"])
-                data = generate_wifi_qr(ssid, password, encryption)
-            elif content_type == "vCard":
-                name = st.text_input("Full Name")
-                phone = st.text_input("Phone")
-                email = st.text_input("Email")
-                data = generate_vcard(name, phone, email)
-            else:
-                data = st.text_area("Text Content")
-        
-        # Style Customization
-        if content_type != "Bulk":
-            fill_color = st.color_picker("Primary Color", "#000000")
-            back_color = st.color_picker("Background Color", "#FFFFFF")
-            size = st.slider("QR Size (px)", 100, 1000, 300)
-            real_time = st.checkbox("Real-time Preview", True)
-
-    with col2:
-        st.header("Output")
-        
-        if content_type == "Bulk":
-            if bulk_csv and st.button("Generate Bulk QRs"):
-                with st.spinner("Processing batch..."):
-                    try:
-                        zip_buffer = process_bulk_qr(bulk_csv)
-                        st.success(f"Generated {len(pd.read_csv(bulk_csv))} QR codes")
-                        st.download_button(
-                            label="Download ZIP",
-                            data=zip_buffer,
-                            file_name="qr_batch.zip",
-                            mime="application/zip"
-                        )
-                    except Exception as e:
-                        st.error(f"Error: {str(e)}")
-        else:
-            if data and (real_time or st.button("Generate QR")):
-                with st.spinner("Generating advanced QR code..."):
-                    try:
-                        qr_img = generate_advanced_qr(
-                            data, fill_color, back_color, size, ec,
-                            logo, shape, gradient
-                        )
-                        
-                        # Preview
-                        st.image(qr_img, use_column_width=True)
-                        
-                        # Export Options
-                        export_format = st.radio("Export Format", ["PNG", "SVG", "PDF"])
-
-
-# Add other code handling to finish up as needed.
